@@ -2,86 +2,57 @@
 #include "nec.h"
 #include <stdio.h>
 
-#define max(a, b) (a > b ? a : b)
-
-nic* nic_create(int v)
+nic* nic_create(nic* memo, int v)
 {
-    nic* n = (nic*)malloc(sizeof(nic));
-    n->l = n->r = 0;
-    n->h = 1;
-    n->v = v;
-    return n;
+    nic n = { 0, 0, 1, v };
+    nec_push(memo, n);
+    return memo + nec_size(memo) - 1;
 }
 
 void calc_height(nic* root)
 {
     int h = 0;
     if(root->l) h = root->l->h;
-    if(root->r) h = max(h, root->r->h);
+    if(root->r) h = h > root->r->h ? h : root->r->h;
     root->h = h + 1;
 }
 
-nic* ror(nic* root)
+nic* rot(nic* root, nic** chroot, nic** child, nic* a, nic* b)
 {
-    nic* chroot = root->l;
-    nic* child = chroot->r;
-
-    if(child && child->h == 1 && chroot->h == 2 && chroot->v < child->v && child->v < root->v)
+    nic *chr = *chroot, *chi = *child;
+    if(chi && chi->h == 1 && chr->h == 2 && a->v < chi->v && chi->v < b->v)
     {
-        child->l = chroot;
-        child->r = root;
-        root->l = chroot->r = 0;
-        root->h = chroot->h = 1;
-        child->h = 2;
-        return child;
+        chi->l = a;
+        chi->r = b;
+        *child = *chroot = 0;
+        root->h = chr->h = 1;
+        chi->h = 2;
+        return chi;
     }
 
-    chroot->r = root;
-    root->l = child;
-    calc_height(root);
-    calc_height(chroot);
-    return chroot;
+    *child = root;
+    *chroot = chi;
+    calc_height(a);
+    calc_height(b);
+    return chr;
 }
 
-//TODO: ror and rol should be 1 function (pass left and right as parameters)
-nic* rol(nic* root)
+nic* nic_insert(nic* memo, nic* root, int v)
 {
-    nic* chroot = root->r;
-    nic* child = chroot->l;
-
-    if(child && child->h == 1 && chroot->h == 2 && root->v < child->v && child->v < chroot->v)
-    {
-        child->l = root;
-        child->r = chroot;
-        root->r = chroot->l = 0;
-        root->h = chroot->h = 1;
-        child->h = 2;
-        return child;
-    }
-
-    chroot->l = root;
-    root->r = child;
-    calc_height(root);
-    calc_height(chroot);
-    return chroot;
-}
-
-nic* nic_insert(nic* root, int v)
-{
-    if(!root) return nic_create(v);
+    if(!root) return nic_create(memo, v);
     nic* temp;
 
     if(v > root->v)
     {
-        if(root->r) temp = nic_insert(root->r, v);
-        else temp = nic_create(v);
+        if(root->r) temp = nic_insert(memo, root->r, v);
+        else temp = nic_create(memo, v);
         if(!temp) return 0;
         root->r = temp;
     }
     else if(v < root->v)
     {
-        if(root->l) temp = nic_insert(root->l, v);
-        else temp = nic_create(v);
+        if(root->l) temp = nic_insert(memo, root->l, v);
+        else temp = nic_create(memo, v);
         if(!temp) return 0;
         root->l = temp;
     }
@@ -95,8 +66,8 @@ nic* nic_insert(nic* root, int v)
 
     if(abs(a - b) > 1)
     {
-        if(a - b > 0) root = ror(root);
-        else root = rol(root);
+        if(a - b > 0) root = rot(root, &root->l, &root->l->r, root->l, root);
+        else          root = rot(root, &root->r, &root->r->l, root, root->r);
     }
     return root;
 }

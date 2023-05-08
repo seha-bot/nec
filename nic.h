@@ -11,16 +11,13 @@ struct nic
 {
     nic* l;
     nic* r;
-    int v;
     int h;
+    int v;
 };
 
-#define nic_push(a, v) ({ nic* temp = nic_insert(a, v); temp ? a = temp : 0; })
+#define nic_push(m, a, v) ({ nic* temp = nic_insert(m, a, v); temp ? a = temp : 0; })
 
-nic* nic_create(int v);
-nic* nic_insert(nic*, int);
-nic* ror(nic*);
-nic* rol(nic*);
+nic* nic_insert(nic*, nic*, int);
 void print(nic* root, char* path);
 
 #endif /* SEHA_NIC */
