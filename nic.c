@@ -2,6 +2,8 @@
 #include "nec.h"
 #include <stdio.h>
 
+#define nic struct nic_node
+
 nic* nic_create(nic* memo, int v)
 {
     nic n = { 0, 0, 1, v };
