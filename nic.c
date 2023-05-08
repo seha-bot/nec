@@ -1,5 +1,6 @@
 #include "nic.h"
-#include <stdlib.h>
+#include "nec.h"
+#include <stdio.h>
 
 #define max(a, b) (a > b ? a : b)
 
@@ -22,11 +23,10 @@ void calc_height(nic* root)
 
 nic* ror(nic* root)
 {
-    if(!root || !root->l) return root;
     nic* chroot = root->l;
     nic* child = chroot->r;
 
-    if(child && child->h == 1 && chroot->v < child->v && child->v < root->v)
+    if(child && child->h == 1 && chroot->h == 2 && chroot->v < child->v && child->v < root->v)
     {
         child->l = chroot;
         child->r = root;
@@ -46,11 +46,10 @@ nic* ror(nic* root)
 //TODO: ror and rol should be 1 function (pass left and right as parameters)
 nic* rol(nic* root)
 {
-    if(!root || !root->r) return root;
     nic* chroot = root->r;
     nic* child = chroot->l;
 
-    if(child && child->h == 1 && root->v < child->v && child->v < chroot->v)
+    if(child && child->h == 1 && chroot->h == 2 && root->v < child->v && child->v < chroot->v)
     {
         child->l = root;
         child->r = chroot;
@@ -70,25 +69,21 @@ nic* rol(nic* root)
 nic* nic_insert(nic* root, int v)
 {
     if(!root) return nic_create(v);
-    nic* child = 0;
+    nic* temp;
 
     if(v > root->v)
     {
-        if(root->r) child = nic_insert(root->r, v);
-        else
-        {
-            child = nic_create(v);
-            root->r = child;
-        }
+        if(root->r) temp = nic_insert(root->r, v);
+        else temp = nic_create(v);
+        if(!temp) return 0;
+        root->r = temp;
     }
     else if(v < root->v)
     {
-        if(root->l) child = nic_insert(root->l, v);
-        else
-        {
-            child = nic_create(v);
-            root->l = child;
-        }
+        if(root->l) temp = nic_insert(root->l, v);
+        else temp = nic_create(v);
+        if(!temp) return 0;
+        root->l = temp;
     }
     else return 0;
 
@@ -100,9 +95,23 @@ nic* nic_insert(nic* root, int v)
 
     if(abs(a - b) > 1)
     {
-        if(b > 0) root = ror(root);
+        if(a - b > 0) root = ror(root);
         else root = rol(root);
     }
     return root;
 }
+
+void print(nic* root, char* path)
+{
+    if(!root) return;
+    printf("%s/%d\n", path, root->v);
+    nec_push(path, '\0');
+    path[nec_size(path)-2] = 'l';
+    print(root->l, path);
+    path[nec_size(path)-2] = 'r';
+    print(root->r, path);
+    path[nec_size(path)-2] = '\0';
+    nec_size_null(path)--;
+}
+
 
