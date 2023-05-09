@@ -51,13 +51,9 @@ nicp* insert(nicp* memo, nicp* root, void* data, int v)
 
     v = root->l ? root->l->h : 0;
     if(root->r) v -= root->r->h;
-
-    if(abs(v) > 1)
-    {
-        if(v > 0) root = rot(root, &root->l, &root->l->r, root->l, root);
-        else      root = rot(root, &root->r, &root->r->l, root, root->r);
-    }
-    return root;
+    if(abs(v) < 2) return root;
+    if(v > 0) return rot(root, &root->l, &root->l->r, root->l, root);
+    return rot(root, &root->r, &root->r->l, root, root->r);
 }
 
 int nic_insert(nic* tree, int v)
