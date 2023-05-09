@@ -6,25 +6,27 @@
 // Balanced binary tree.
 // Made as a base for maps.
 
-struct nic_node
+struct nicp
 {
-    struct nic_node* l;
-    struct nic_node* r;
+    struct nicp* l;
+    struct nicp* r;
     int h;
     int v;
 };
+typedef struct nicp nicp;
 
-typedef struct nic nic;
-struct nic
+typedef struct
 {
-    struct nic_node* memo;
-    struct nic_node* root;
-};
+    nicp* memo;
+    nicp* root;
+} nic;
 
-#define nic_push(a, v) ({ struct nic_node* temp = nic_insert(a.memo, a.root, v); temp ? a.root = temp : 0; })
+#define nic_find(a, v) nic_find_impl(a.root, v)
+#define nic_free(a) nec_free(a.memo)
 
-struct nic_node* nic_insert(struct nic_node*, struct nic_node*, int);
-void print(struct nic_node* root, char* path);
+int nic_insert(nic*, int);
+int nic_find_impl(nicp*, int);
+void print(nicp*, char*);
 
 #endif /* SEHA_NIC */
 

@@ -2,16 +2,14 @@
 #include "nec.h"
 #include <stdio.h>
 
-#define nic struct nic_node
-
-nic* nic_create(nic* memo, int v)
+nicp* create(nicp* memo, int v)
 {
-    nic n = { 0, 0, 1, v };
+    nicp n = { 0, 0, 1, v };
     nec_push(memo, n);
     return memo + nec_size(memo) - 1;
 }
 
-void calc_height(nic* root)
+void calc_height(nicp* root)
 {
     int h = 0;
     if(root->l) h = root->l->h;
@@ -19,9 +17,9 @@ void calc_height(nic* root)
     root->h = h + 1;
 }
 
-nic* rot(nic* root, nic** chroot, nic** child, nic* a, nic* b)
+nicp* rot(nicp* root, nicp** chroot, nicp** child, nicp* a, nicp* b)
 {
-    nic *chr = *chroot, *chi = *child;
+    nicp *chr = *chroot, *chi = *child;
     if(chi && chi->h == 1 && chr->h == 2 && a->v < chi->v && chi->v < b->v)
     {
         chi->l = a;
@@ -39,33 +37,60 @@ nic* rot(nic* root, nic** chroot, nic** child, nic* a, nic* b)
     return chr;
 }
 
-nic* nic_insert(nic* memo, nic* root, int v)
+nicp* insert(nicp* memo, nicp* root, int v)
 {
-    if(!root) return nic_create(memo, v);
+    if(!root) return create(memo, v);
     if(v == root->v) return 0;
 
-    nic* temp;
-    nic** next = v > root->v ? &root->r : &root->l;
-    if(*next) temp = nic_insert(memo, *next, v);
-    else temp = nic_create(memo, v);
-    if(!temp) return 0;
-    *next = temp;
+    nicp** next = v > root->v ? &root->r : &root->l;
+    if(*next)
+    {
+        nicp* temp = insert(memo, *next, v);
+        if(!temp) return 0;
+        *next = temp;
+    }
+    else
+    {
+        *next = create(memo, v);
+        return root;
+    }
 
     calc_height(root);
 
-    int a = 0, b = 0;
-    if(root->l) a = root->l->h;
-    if(root->r) b = root->r->h;
+    v = root->l ? root->l->h : 0;
+    if(root->r) v -= root->r->h;
 
-    if(abs(a - b) > 1)
+    if(abs(v) > 1)
     {
-        if(a - b > 0) root = rot(root, &root->l, &root->l->r, root->l, root);
-        else          root = rot(root, &root->r, &root->r->l, root, root->r);
+        if(v > 0) root = rot(root, &root->l, &root->l->r, root->l, root);
+        else      root = rot(root, &root->r, &root->r->l, root, root->r);
     }
     return root;
 }
 
-void print(nic* root, char* path)
+int nic_find_impl(nicp* root, int v)
+{
+    if(!root) return 0;
+
+    if(v < root->v) return nic_find_impl(root->l, v);
+    else if(v > root->v) return nic_find_impl(root->r, v);
+    else return 1;
+
+    return 0;
+}
+
+int nic_insert(nic* tree, int v)
+{
+    nicp* status = insert(tree->memo, tree->root, v);
+    if(status)
+    {
+        tree->root = status;
+        return 1;
+    }
+    return 0;
+}
+
+void print(nicp* root, char* path)
 {
     if(!root) return;
     printf("%s/%d\n", path, root->v);
@@ -77,5 +102,4 @@ void print(nic* root, char* path)
     path[nec_size(path)-2] = '\0';
     nec_size_null(path)--;
 }
-
 
