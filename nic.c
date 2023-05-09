@@ -34,31 +34,22 @@ nic* rot(nic* root, nic** chroot, nic** child, nic* a, nic* b)
 
     *child = root;
     *chroot = chi;
-    calc_height(a);
-    calc_height(b);
+    calc_height(root);
+    calc_height(chr);
     return chr;
 }
 
 nic* nic_insert(nic* memo, nic* root, int v)
 {
     if(!root) return nic_create(memo, v);
-    nic* temp;
+    if(v == root->v) return 0;
 
-    if(v > root->v)
-    {
-        if(root->r) temp = nic_insert(memo, root->r, v);
-        else temp = nic_create(memo, v);
-        if(!temp) return 0;
-        root->r = temp;
-    }
-    else if(v < root->v)
-    {
-        if(root->l) temp = nic_insert(memo, root->l, v);
-        else temp = nic_create(memo, v);
-        if(!temp) return 0;
-        root->l = temp;
-    }
-    else return 0;
+    nic* temp;
+    nic** next = v > root->v ? &root->r : &root->l;
+    if(*next) temp = nic_insert(memo, *next, v);
+    else temp = nic_create(memo, v);
+    if(!temp) return 0;
+    *next = temp;
 
     calc_height(root);
 
