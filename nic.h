@@ -4,19 +4,21 @@
 // NO INDEX CONTAINER
 //
 // Balanced binary tree.
-// Made as a base for maps.
+// Made as a base for sets and maps.
 
 struct nicp
 {
     struct nicp* l;
     struct nicp* r;
     int h;
-    int v;
+    int hash;
+    void* data;
 };
 typedef struct nicp nicp;
 
 typedef struct
 {
+    void* data;
     nicp* memo;
     nicp* root;
 } nic;

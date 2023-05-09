@@ -2,9 +2,9 @@
 #include "nec.h"
 #include <stdio.h>
 
-nicp* create(nicp* memo, int v)
+nicp* create(nicp* memo, void* data, int v)
 {
-    nicp n = { 0, 0, 1, v };
+    nicp n = { 0, 0, 1, v, 0 };
     nec_push(memo, n);
     return memo + nec_size(memo) - 1;
 }
@@ -20,7 +20,7 @@ void calc_height(nicp* root)
 nicp* rot(nicp* root, nicp** chroot, nicp** child, nicp* a, nicp* b)
 {
     nicp *chr = *chroot, *chi = *child;
-    if(chi && chi->h == 1 && chr->h == 2 && a->v < chi->v && chi->v < b->v)
+    if(chi && chi->h == 1 && chr->h == 2 && a->hash < chi->hash && chi->hash < b->hash)
     {
         chi->l = a;
         chi->r = b;
@@ -37,23 +37,15 @@ nicp* rot(nicp* root, nicp** chroot, nicp** child, nicp* a, nicp* b)
     return chr;
 }
 
-nicp* insert(nicp* memo, nicp* root, int v)
+nicp* insert(nicp* memo, nicp* root, void* data, int v)
 {
-    if(!root) return create(memo, v);
-    if(v == root->v) return 0;
+    if(!root) return create(memo, data, v);
+    if(v == root->hash) return 0;
 
-    nicp** next = v > root->v ? &root->r : &root->l;
-    if(*next)
-    {
-        nicp* temp = insert(memo, *next, v);
-        if(!temp) return 0;
-        *next = temp;
-    }
-    else
-    {
-        *next = create(memo, v);
-        return root;
-    }
+    nicp** next = v > root->hash ? &root->r : &root->l;
+    nicp* temp = insert(memo, *next, data, v);
+    if(!temp) return 0;
+    *next = temp;
 
     calc_height(root);
 
@@ -68,20 +60,9 @@ nicp* insert(nicp* memo, nicp* root, int v)
     return root;
 }
 
-int nic_find_impl(nicp* root, int v)
-{
-    if(!root) return 0;
-
-    if(v < root->v) return nic_find_impl(root->l, v);
-    else if(v > root->v) return nic_find_impl(root->r, v);
-    else return 1;
-
-    return 0;
-}
-
 int nic_insert(nic* tree, int v)
 {
-    nicp* status = insert(tree->memo, tree->root, v);
+    nicp* status = insert(tree->memo, tree->root, tree->data, v);
     if(status)
     {
         tree->root = status;
@@ -90,10 +71,21 @@ int nic_insert(nic* tree, int v)
     return 0;
 }
 
+int nic_find_impl(nicp* root, int v)
+{
+    if(!root) return 0;
+
+    if(v < root->hash) return nic_find_impl(root->l, v);
+    else if(v > root->hash) return nic_find_impl(root->r, v);
+    else return 1;
+
+    return 0;
+}
+
 void print(nicp* root, char* path)
 {
     if(!root) return;
-    printf("%s/%d\n", path, root->v);
+    printf("%s/%d\n", path, root->hash);
     nec_push(path, '\0');
     path[nec_size(path)-2] = 'l';
     print(root->l, path);
