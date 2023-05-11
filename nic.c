@@ -1,92 +1,83 @@
 #include "nic.h"
-#include "nec.h"
 #include <stdio.h>
 
-nicp* create(nicp* memo, void* data, int v)
+int create(nicp** memo, int hash)
 {
-    nicp n = { 0, 0, 1, v, 0 };
-    nec_push(memo, n);
-    return memo + nec_size(memo) - 1;
+    nicp n = { 0, 0, 1, hash, 0 };
+    nec_push((*memo), n);
+    return nec_size((*memo));
 }
 
-void calc_height(nicp* root)
+void calc_height(nicp** memo, nicp* root)
 {
     int h = 0;
-    if(root->l) h = root->l->h;
-    if(root->r) h = h > root->r->h ? h : root->r->h;
+    root->h = (*memo + root->r - 1)->h;
+    if(root->l) h = (*memo + root->l - 1)->h;
+    if(root->r) h = h > root->h ? h : root->h;
     root->h = h + 1;
 }
 
-nicp* rot(nicp* root, nicp** chroot, nicp** child, nicp* a, nicp* b)
+int rot(nicp** memo, nicp* root, int* chroot, int* child, nicp* a, nicp* b)
 {
-    nicp *chr = *chroot, *chi = *child;
+    nicp *chr = *memo + *chroot - 1, *chi = *memo + *child - 1;
     if(chi && chi->h == 1 && chr->h == 2 && a->hash < chi->hash && chi->hash < b->hash)
     {
-        chi->l = a;
-        chi->r = b;
+        chi->l = a - *memo + 1;
+        chi->r = b - *memo + 1;
         *child = *chroot = 0;
         root->h = chr->h = 1;
         chi->h = 2;
-        return chi;
+        return chi - *memo + 1;
     }
 
-    *child = root;
-    *chroot = chi;
-    calc_height(root);
-    calc_height(chr);
-    return chr;
+    *child = root - *memo + 1;
+    *chroot = chi - *memo + 1;
+    calc_height(memo, root);
+    calc_height(memo, chr);
+    return chr - *memo + 1;
 }
 
-nicp* insert(nicp* memo, nicp* root, void* data, int v)
+int nic_insert_hash(nicp** memo, int root, int hash)
 {
-    if(!root) return create(memo, data, v);
-    if(v == root->hash) return 0;
+    if(!root) return create(memo, hash);
+    nicp* rp = *memo + root - 1;
 
-    nicp** next = v > root->hash ? &root->r : &root->l;
-    nicp* temp = insert(memo, *next, data, v);
-    if(!temp) return 0;
-    *next = temp;
-
-    calc_height(root);
-
-    v = root->l ? root->l->h : 0;
-    if(root->r) v -= root->r->h;
-    if(abs(v) < 2) return root;
-    if(v > 0) return rot(root, &root->l, &root->l->r, root->l, root);
-    return rot(root, &root->r, &root->r->l, root, root->r);
-}
-
-int nic_insert(nic* tree, int v)
-{
-    nicp* status = insert(tree->memo, tree->root, tree->data, v);
-    if(status)
+    if(hash > rp->hash)
     {
-        tree->root = status;
-        return 1;
+        hash = nic_insert_hash(memo, rp->r, hash);
+        if(!hash) return 0;
+        rp = *memo + root - 1;
+        rp->r = hash;
     }
-    return 0;
+    else if(hash < rp->hash)
+    {
+        hash = nic_insert_hash(memo, rp->l, hash);
+        if(!hash) return 0;
+        rp = *memo + root - 1;
+        rp->l = hash;
+    }
+    else return 0;
+
+    calc_height(memo, rp);
+
+    nicp *l = *memo + rp->l - 1, *r = *memo + rp->r - 1;
+    hash = rp->l ? l->h : 0;
+    if(rp->r) hash -= r->h;
+    if(abs(hash) < 2) return root;
+    if(hash > 0) return rot(memo, rp, &rp->l, &l->r, l, rp);
+    return rot(memo, rp, &rp->r, &r->l, rp, r);
 }
 
-int nic_find_impl(nicp* root, int v)
-{
-    if(!root) return 0;
-
-    if(v < root->hash) return nic_find_impl(root->l, v);
-    else if(v > root->hash) return nic_find_impl(root->r, v);
-    else return 1;
-
-    return 0;
-}
-
-void print(nicp* root, char* path)
+void print(nicp* memo, int root, char* path)
 {
     if(!root) return;
-    printf("%s/%d\n", path, root->hash);
+    nicp* rpa = memo + root - 1;
+    printf("%s/%d\n", path, rpa->hash);
     nec_push(path, '\0');
     path[nec_size(path)-2] = 'l';
-    print(root->l, path);
+    print(memo, rpa->l, path);
     path[nec_size(path)-2] = 'r';
-    print(root->r, path);
+    print(memo, rpa->r, path);
     path[nec_size(path)-2] = '\0';
     nec_size_null(path)--;
 }
