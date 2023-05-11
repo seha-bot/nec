@@ -1,10 +1,10 @@
 #include "nic.h"
 #include <stdio.h>
 
-int create(nicp** memo, int hash)
+size_t create(nicp** memo, int hash)
 {
-    nicp n = { 0, 0, 1, hash, 0 };
-    nec_push((*memo), n);
+    nicp n = { 0, 0, 0, 1, hash };
+    nec_push((*memo), n); //TODO REMOVE ZAGRADE I STAVI TO U nec.h
     return nec_size((*memo));
 }
 
@@ -17,7 +17,7 @@ void calc_height(nicp** memo, nicp* root)
     root->h = h + 1;
 }
 
-int rot(nicp** memo, nicp* root, int* chroot, int* child, nicp* a, nicp* b)
+size_t rot(nicp** memo, nicp* root, size_t* chroot, size_t* child, nicp* a, nicp* b)
 {
     nicp *chr = *memo + *chroot - 1, *chi = *memo + *child - 1;
     if(chi && chi->h == 1 && chr->h == 2 && a->hash < chi->hash && chi->hash < b->hash)
@@ -37,7 +37,7 @@ int rot(nicp** memo, nicp* root, int* chroot, int* child, nicp* a, nicp* b)
     return chr - *memo + 1;
 }
 
-int nic_insert_hash(nicp** memo, int root, int hash)
+size_t nic_insert_hash(nicp** memo, size_t root, int hash)
 {
     if(!root) return create(memo, hash);
     nicp* rp = *memo + root - 1;
@@ -68,7 +68,7 @@ int nic_insert_hash(nicp** memo, int root, int hash)
     return rot(memo, rp, &rp->r, &r->l, rp, r);
 }
 
-void print(nicp* memo, int root, char* path)
+void print(nicp* memo, size_t root, char* path)
 {
     if(!root) return;
     nicp* rpa = memo + root - 1;

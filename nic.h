@@ -8,23 +8,40 @@
 // Balanced binary tree.
 // Made as a base for sets and maps.
 
-#define nic_use(n, t) \
-struct nicp##n { int l, r, h, hash; t* data; }; \
-typedef struct nicp##n nicp##n; \
-typedef struct { t* data; nicp##n *memo; int root; } nic##n;
+struct nicp
+{
+    size_t l, r, data;
+    int h, hash;
+};
+typedef struct nicp nicp;
 
-nic_use(,void);
+typedef struct
+{
+    void* data;
+    nicp *memo;
+    size_t root;
+} nic;
 
-int nic_insert_hash(nicp**, int, int);
-int nic_find_impl(nicp*, int);
-void print(nicp*, int, char*);
+size_t nic_insert_hash(nicp**, size_t, int);
+void print(nicp*, size_t, char*);
 
+#define nic_map(__nic_a, __nic_k, __nic_v) \
+({ \
+    size_t __nic_r = nic_insert_hash(&__nic_a.memo, __nic_a.root, __nic_k); \
+    __nic_r ? ({ \
+        __nic_a.root = __nic_r; \
+        typeof(__nic_v)* place = __nic_a.data; \
+        nec_push(place, __nic_v); \
+        __nic_a.data = place; \
+        nicp* last = __nic_a.memo + nec_size(__nic_a.memo) - 1; \
+        last->data = nec_size(__nic_a.data) - 1; \
+    }) : 0; \
+})
 #define nic_insert(__nic_a, __nic_v) \
 ({ \
-    int __nic_r = nic_insert_hash((nicp**)&__nic_a.memo, __nic_a.root, __nic_v); \
-    __nic_r ? (__nic_a.root = __nic_r, 1) : 0; \
+    size_t __nic_r = nic_insert_hash(&__nic_a.memo, __nic_a.root, __nic_v); \
+    __nic_r ? __nic_a.root = __nic_r : 0; \
 })
-#define nic_find(a, v) nic_find_impl(a.root, v)
 #define nic_free(a) nec_free(a.memo)
 
 #endif /* SEHA_NIC */
