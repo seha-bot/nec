@@ -4,8 +4,8 @@
 size_t create(nicp** memo, int hash)
 {
     nicp n = { 0, 0, 0, 1, hash };
-    nec_push((*memo), n); //TODO REMOVE ZAGRADE I STAVI TO U nec.h
-    return nec_size((*memo));
+    nec_push(*memo, n);
+    return nec_size(*memo);
 }
 
 void calc_height(nicp** memo, nicp* root)
