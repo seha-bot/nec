@@ -1,4 +1,5 @@
 #include "nic.h"
+#include "nec.h"
 #include <stdio.h>
 
 size_t create(nicp** memo, int hash)
@@ -72,13 +73,12 @@ void print(nicp* memo, size_t root, char* path)
 {
     if(!root) return;
     nicp* rpa = memo + root - 1;
-    printf("%s/%d\n", path, rpa->hash);
     nec_push(path, '\0');
-    path[nec_size(path)-2] = 'l';
+    printf("%s/%d\n", path, rpa->hash);
+    path[nec_size(path)-1] = 'l';
     print(memo, rpa->l, path);
-    path[nec_size(path)-2] = 'r';
+    path[nec_size(path)-1] = 'r';
     print(memo, rpa->r, path);
-    path[nec_size(path)-2] = '\0';
-    nec_size_null(path)--;
+    nec_pop(path);
 }
 
