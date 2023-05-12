@@ -3,18 +3,31 @@
 
 #include <stdlib.h>
 
-#define nec_size_null(__nec_a) (*((int*)__nec_a - 1))
+#define nec_potencial_null(__nec_a) (*((size_t*)__nec_a - 1))
+#define nec_size_null(__nec_a) (*((size_t*)__nec_a - 2))
+
+#define nec_potencial(__nec_a) (__nec_a ? nec_potencial_null(__nec_a) : 1)
 #define nec_size(__nec_a) (__nec_a ? nec_size_null(__nec_a) : 0)
 
-#define nec_add(__nec_a) \
+#define nec_start(__nec_a) (size_t*)__nec_a - ((__nec_a != 0) << 1)
+
+#define nec_realloc(__nec_a) \
 ({ \
-    int __nec_s = nec_size(__nec_a) + 1; \
-    __nec_a = (void*)((int*)realloc((int*)__nec_a - (__nec_a != 0), sizeof(int) + sizeof(*__nec_a) * __nec_s) + 1); \
-    nec_size_null(__nec_a) = __nec_s; \
+    const size_t __nec_p = nec_potencial(__nec_a) << 1; \
+    __nec_a = (void*)((size_t*)realloc(nec_start(__nec_a), \
+    (sizeof(size_t) << 1) + sizeof(*__nec_a) * __nec_p) + 2); \
+    nec_potencial_null(__nec_a) = __nec_p; \
 })
 
-#define nec_push(__nec_a, __nec_v) (nec_add(__nec_a), (__nec_a)[nec_size(__nec_a) - 1] = __nec_v)
-#define nec_free(__nic_a) (free((int*)__nic_a - (__nic_a != 0)), __nic_a = 0)
+#define nec_push(__nec_a, __nec_v) \
+({ \
+    const size_t __nec_s = nec_size(__nec_a); \
+    if((__nec_s & __nec_s - 1) == 0 && __nec_s != 1) nec_realloc(__nec_a); \
+    nec_size_null(__nec_a) = __nec_s + 1; \
+    (__nec_a)[__nec_s] = __nec_v; \
+})
+
+#define nec_free(__nec_a) (free(nec_start(__nec_a), __nec_a = 0)
 
 #endif /* SEHA_NEC */
 
