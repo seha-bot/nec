@@ -13,6 +13,17 @@ size_t nic_hash(char* s)
     return hash;
 }
 
+size_t nic_find_hash(nicp* memo, size_t root, size_t hash)
+{
+    if(!root) return 0;
+    nicp* rp = memo + root - 1;
+
+    if(hash > rp->hash) return nic_find_hash(memo, rp->r, hash);
+    else if(hash < rp->hash) return nic_find_hash(memo, rp->l, hash);
+
+    return root;
+}
+
 size_t create(nicp** memo, size_t hash)
 {
     nicp n = { 0, 0, hash, 1 };
@@ -80,18 +91,7 @@ size_t nic_insert_hash(nicp** memo, size_t root, size_t hash)
     return rot(memo, rp, &rp->r, &r->l, rp, r);
 }
 
-size_t nic_find_hash(nicp* memo, size_t root, size_t hash)
-{
-    if(!root) return 0;
-    nicp* rp = memo + root - 1;
-
-    if(hash > rp->hash) return nic_find_hash(memo, rp->r, hash);
-    else if(hash < rp->hash) return nic_find_hash(memo, rp->l, hash);
-
-    return root;
-}
-
-void print(nicp* memo, size_t root, char* path)
+void nic_debug(nicp* memo, size_t root, char* path)
 {
     if(!root) return;
     nicp* rpa = memo + root - 1;
