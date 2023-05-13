@@ -10,8 +10,8 @@
 
 struct nicp
 {
-    size_t l, r, data;
-    int h, hash;
+    size_t l, r, data, hash;
+    int h;
 };
 typedef struct nicp nicp;
 
@@ -22,7 +22,9 @@ typedef struct
     size_t root;
 } nic;
 
-size_t nic_insert_hash(nicp**, size_t, int);
+size_t nic_insert_hash(nicp**, size_t, size_t);
+size_t nic_hash(char*);
+nicp* nic_find_hash(nicp*, size_t, size_t);
 void print(nicp*, size_t, char*);
 
 #define nic_insert(__nic_a, __nic_v) \
@@ -43,6 +45,16 @@ void print(nicp*, size_t, char*);
         (__nic_a.memo + nec_size(__nic_a.memo) - 1)->data = nec_size(__nic_a.data) - 1; \
     } \
 })
+
+#define nic_map(__nic_a, __nic_k, __nic_v) nic_imap(__nic_a, nic_hash(__nic_k), __nic_v)
+
+#define nic_imap_find(__nic_t, __nic_a, __nic_k) \
+({ \
+    nicp* __nic_r = nic_find_hash(__nic_a.memo, __nic_a.root, __nic_k); \
+    __nic_r ? (__nic_t*)__nic_a.data + __nic_r->data : 0; \
+})
+
+#define nic_map_find(__nic_t, __nic_a, __nic_k) nic_imap_find(__nic_t, __nic_a, nic_hash(__nic_k))
 
 #define nic_free(__nic_a) (nec_free(__nic_a.memo), nec_free(__nic_a.data))
 

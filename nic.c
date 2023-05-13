@@ -2,9 +2,9 @@
 #include "nec.h"
 #include <stdio.h>
 
-size_t create(nicp** memo, int hash)
+size_t create(nicp** memo, size_t hash)
 {
-    nicp n = { 0, 0, 0, 1, hash };
+    nicp n = { 0, 0, 0, hash, 1 };
     nec_push(*memo, n);
     return nec_size(*memo);
 }
@@ -38,7 +38,7 @@ size_t rot(nicp** memo, nicp* root, size_t* chroot, size_t* child, nicp* a, nicp
     return chr - *memo + 1;
 }
 
-size_t nic_insert_hash(nicp** memo, size_t root, int hash)
+size_t nic_insert_hash(nicp** memo, size_t root, size_t hash)
 {
     if(!root) return create(memo, hash);
     nicp* rp = *memo + root - 1;
@@ -62,11 +62,33 @@ size_t nic_insert_hash(nicp** memo, size_t root, int hash)
     calc_height(memo, rp);
 
     nicp *l = *memo + rp->l - 1, *r = *memo + rp->r - 1;
-    hash = rp->l ? l->h : 0;
-    if(rp->r) hash -= r->h;
-    if(abs(hash) < 2) return root;
-    if(hash > 0) return rot(memo, rp, &rp->l, &l->r, l, rp);
+    int hdiff = rp->l ? l->h : 0;
+    if(rp->r) hdiff -= r->h;
+    if(abs(hdiff) < 2) return root;
+    if(hdiff > 0) return rot(memo, rp, &rp->l, &l->r, l, rp);
     return rot(memo, rp, &rp->r, &r->l, rp, r);
+}
+
+size_t nic_hash(char* s)
+{
+    size_t hash = 0, offset = 1;
+    while(*s)
+    {
+        hash += (*(s++) - 31) * offset;
+        offset *= 96;
+    }
+    return hash;
+}
+
+nicp* nic_find_hash(nicp* memo, size_t root, size_t hash)
+{
+    if(!root) return 0;
+    nicp* rp = memo + root - 1;
+
+    if(hash > rp->hash) return nic_find_hash(memo, rp->r, hash);
+    else if(hash < rp->hash) return nic_find_hash(memo, rp->l, hash);
+
+    return rp;
 }
 
 void print(nicp* memo, size_t root, char* path)
@@ -74,7 +96,7 @@ void print(nicp* memo, size_t root, char* path)
     if(!root) return;
     nicp* rpa = memo + root - 1;
     nec_push(path, '\0');
-    printf("%s/%d\n", path, rpa->hash);
+    printf("%s/%lu\n", path, rpa->hash);
     path[nec_size(path)-1] = 'l';
     print(memo, rpa->l, path);
     path[nec_size(path)-1] = 'r';
