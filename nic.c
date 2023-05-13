@@ -98,9 +98,9 @@ void nic_debug(nicp* memo, size_t root, char* path)
     nec_push(path, '\0');
     printf("%s/%lu\n", path, rpa->hash);
     path[nec_size(path)-1] = 'l';
-    print(memo, rpa->l, path);
+    nic_debug(memo, rpa->l, path);
     path[nec_size(path)-1] = 'r';
-    print(memo, rpa->r, path);
+    nic_debug(memo, rpa->r, path);
     nec_pop(path);
 }
 
