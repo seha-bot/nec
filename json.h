@@ -5,6 +5,7 @@
 
 typedef struct
 {
+    nic keys;
     nic ints;
     nic doubles;
     nic strings;
@@ -12,15 +13,23 @@ typedef struct
 } json;
 
 json json_init(void);
-void json_insert_int(json*, char*, int);
-void json_insert_double(json*, char*, double);
-void json_insert_string(json*, char*, char*);
-void json_insert_object(json*, char*, json);
+void json_write(const json*, const char*);
 
-int json_get_int(json*, char*);
-double json_get_double(json*, char*);
-char* json_get_string(json*, char*);
-json json_get_object(json*, char*);
+#define json_set(__json_t, __json_d, __json_k, __json_v) \
+( \
+    nic_map(__json_d.keys, __json_k, (char*)__json_k), \
+    nic_map(__json_d.__json_t##s, __json_k, (__json_t)__json_v) \
+)
+#define json_get(__json_t, __json_d, __json_k) nic_map_find(__json_t, __json_d.__json_t##s, __json_k)
+
+#define json_free(__json_d) \
+( \
+    nic_free(__json_d.keys), \
+    nic_free(__json_d.ints), \
+    nic_free(__json_d.doubles), \
+    nic_free(__json_d.strings), \
+    nic_free(__json_d.objects) \
+)
 
 #endif /* SEHA_JSON */
 
