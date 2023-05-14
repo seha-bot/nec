@@ -3,6 +3,10 @@
 
 #include "nic.h"
 
+// This is a very bad and slow way
+// to store keys and values.
+// Instead, nic should have a nic_entry
+// which holds a key and a value.
 typedef struct
 {
     nic keys;
@@ -13,22 +17,25 @@ typedef struct
 } json;
 
 json json_init(void);
-void json_write(const json*, const char*);
 
-#define json_set(__json_t, __json_d, __json_k, __json_v) \
-( \
-    nic_map(__json_d.keys, __json_k, (char*)__json_k), \
-    nic_map(__json_d.__json_t##s, __json_k, (__json_t)__json_v) \
-)
-#define json_get(__json_t, __json_d, __json_k) nic_map_find(__json_t, __json_d.__json_t##s, __json_k)
+void json_set_int(json*, const char*, int);
+void json_set_double(json*, const char*, double);
+void json_set_string(json*, const char*, const char*);
+void json_set_object(json*, const char*, json);
+int* json_get_int(const json*, const char*);
+double* json_get_double(const json*, const char*);
+char** json_get_string(const json*, const char*);
+json* json_get_object(const json*, const char*);
+
+void json_write(const json*, const char*);
 
 #define json_free(__json_d) \
 ( \
-    nic_free(__json_d.keys), \
-    nic_free(__json_d.ints), \
-    nic_free(__json_d.doubles), \
-    nic_free(__json_d.strings), \
-    nic_free(__json_d.objects) \
+    nic_free((__json_d).keys), \
+    nic_free((__json_d).ints), \
+    nic_free((__json_d).doubles), \
+    nic_free((__json_d).strings), \
+    nic_free((__json_d).objects) \
 )
 
 #endif /* SEHA_JSON */
