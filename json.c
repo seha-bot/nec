@@ -71,9 +71,14 @@ void deep_write(FILE* fp, const json* dir, int dent)
         char** sval = json_get_string(dir, key);
         json* oval = json_get_object(dir, key);
         add_tab(fp, dent);
-        if(ival) fprintf(fp, "\"%s\": %d,\n", key, *ival);
-        else if(dval) fprintf(fp, "\"%s\": %f,\n", key, *dval);
-        else if(sval) fprintf(fp, "\"%s\": %s,\n", key, *sval);
+        fprintf(fp, "\"%s\": ", key);
+        if(ival) fprintf(fp, "%d", *ival);
+        else if(dval) fprintf(fp, "%f", *dval);
+        else if(sval) fprintf(fp, "\"%s\"", *sval);
+        else if(oval) deep_write(fp, oval, dent);
+
+        if(i != nec_size(dir->keys.data) - 1) fprintf(fp, ",");
+        fprintf(fp, "\n");
     }
     add_tab(fp, dent - 1);
     fprintf(fp, "}\n");
