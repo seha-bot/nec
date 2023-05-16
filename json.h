@@ -17,6 +17,7 @@ typedef struct
 } json;
 
 json json_init(void);
+char* json_truncate(const char*);
 
 void json_set_int(json*, const char*, int);
 void json_set_double(json*, const char*, double);
@@ -28,6 +29,7 @@ char** json_get_string(const json*, const char*);
 json* json_get_object(const json*, const char*);
 
 char* json_write(const json*);
+json json_read(const char*);
 
 #define json_free(__json_d) \
 ( \

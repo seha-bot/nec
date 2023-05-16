@@ -10,6 +10,20 @@ json json_init(void)
     return (json){ nop, nop, nop, nop, nop };
 }
 
+char* json_truncate(const char* src)
+{
+    char* buff = 0;
+    char safe = 1, c;
+    while(*src++)
+    {
+        c = *(src - 1);
+        if(safe && (c == ' ' || c == '\n' || c == '\r')) continue;
+        if(c == '"' && (safe || *(src - 2) != '\\')) safe = !safe;
+        nec_push(buff, c);
+    }
+    return buff;
+}
+
 #define json_set(__json_n, __json_d, __json_k, __json_v) \
 ( \
     nic_map(__json_d->keys, __json_k, (char*)__json_k), \
@@ -74,6 +88,19 @@ void add_tab(char** buff, int n)
     while(n--) nec_printf(buff, "    ");
 }
 
+void safe_quotes(char** buff, const char* src)
+{
+    (*buff)[nec_size(*buff) - 1] = '"';
+    while(*src)
+    {
+        if(*src == '"') nec_push(*buff, '\\');
+        nec_push(*buff, *src);
+        src++;
+    }
+    nec_push(*buff, '"');
+    nec_push(*buff, '\0');
+}
+
 void deep_write(char** buff, const json* dir, int dent)
 {
     nec_printf(buff, "{\n");
@@ -88,7 +115,7 @@ void deep_write(char** buff, const json* dir, int dent)
         nec_printf(buff, "\"%s\": ", key);
         if(ival) nec_printf(buff, "%d", *ival);
         else if(dval) nec_printf(buff, "%f", *dval);
-        else if(sval) nec_printf(buff, "\"%s\"", *sval);
+        else if(sval) safe_quotes(buff, *sval);
         else if(oval) deep_write(buff, oval, dent + 1);
 
         if(i != nec_size(dir->keys.data) - 1) nec_printf(buff, ",");
@@ -103,5 +130,11 @@ char* json_write(const json* dir)
     char* buff = 0;
     deep_write(&buff, dir, 1);
     return buff;
+}
+
+json json_read(const char* buff)
+{
+    json dir = json_init();
+    return dir;
 }
 
