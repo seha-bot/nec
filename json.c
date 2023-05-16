@@ -1,6 +1,7 @@
 #include "json.h"
 #include "nec.h"
 #include "nic.h"
+#include <stdarg.h>
 #include <stdio.h>
 
 json json_init(void)
@@ -54,15 +55,28 @@ json* json_get_object(const json* dir, const char* key)
     return nic_map_find(json, dir->objects, key);
 }
 
-void add_tab(FILE* fp, int n)
+// TODO this doesn't belong here
+void nec_printf(char** buff, const char* format, ...)
 {
-    while(n--) fprintf(fp, "    ");
+    va_list args;
+    va_start(args, format);
+    int n = vsnprintf(0, 0, format, args);
+    int start = nec_size(*buff);
+    if(!start) n++;
+    else start--;
+    while(n--) nec_push(*buff, 0);
+    vsprintf(*buff + start, format, args);
+    va_end(args);
 }
 
-void deep_write(FILE* fp, const json* dir, int dent)
+void add_tab(char** buff, int n)
 {
-    add_tab(fp, dent++);
-    fprintf(fp, "{\n");
+    while(n--) nec_printf(buff, "    ");
+}
+
+void deep_write(char** buff, const json* dir, int dent)
+{
+    nec_printf(buff, "{\n");
     for(int i = 0; i < nec_size(dir->keys.data); i++)
     {
         const char* key = ((char**)dir->keys.data)[i];
@@ -70,24 +84,24 @@ void deep_write(FILE* fp, const json* dir, int dent)
         double* dval = json_get_double(dir, key);
         char** sval = json_get_string(dir, key);
         json* oval = json_get_object(dir, key);
-        add_tab(fp, dent);
-        fprintf(fp, "\"%s\": ", key);
-        if(ival) fprintf(fp, "%d", *ival);
-        else if(dval) fprintf(fp, "%f", *dval);
-        else if(sval) fprintf(fp, "\"%s\"", *sval);
-        else if(oval) deep_write(fp, oval, dent);
+        add_tab(buff, dent);
+        nec_printf(buff, "\"%s\": ", key);
+        if(ival) nec_printf(buff, "%d", *ival);
+        else if(dval) nec_printf(buff, "%f", *dval);
+        else if(sval) nec_printf(buff, "\"%s\"", *sval);
+        else if(oval) deep_write(buff, oval, dent + 1);
 
-        if(i != nec_size(dir->keys.data) - 1) fprintf(fp, ",");
-        fprintf(fp, "\n");
+        if(i != nec_size(dir->keys.data) - 1) nec_printf(buff, ",");
+        nec_printf(buff, "\n");
     }
-    add_tab(fp, dent - 1);
-    fprintf(fp, "}\n");
+    add_tab(buff, dent - 1);
+    nec_printf(buff, "}");
 }
 
-void json_write(const json* dir, const char* path)
+char* json_write(const json* dir)
 {
-    FILE* fp = fopen(path, "w");
-    deep_write(fp, dir, 0);
-    fclose(fp);
+    char* buff = 0;
+    deep_write(&buff, dir, 1);
+    return buff;
 }
 
