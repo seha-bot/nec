@@ -135,6 +135,47 @@ char* json_write(const json* dir)
 json json_read(const char* buff)
 {
     json dir = json_init();
+    char c, type = 0, *key = 0, *sVal = 0;
+    json oVal;
+    while(*buff++ != '}')
+    {
+        c = *buff;
+        if(!key || key[nec_size(key) - 1] != ':')
+        {
+            if(c == '"') continue;
+            nec_push(key, c);
+        }
+        else
+        {
+            if(!type)
+            {
+                if(c == '{') type = 1;
+                else if(c == '"') type = 2;
+                else type = 3;
+            }
+            else if(type == 3 && c == '.') type = 4;
+            if(type != 1) nec_push(sVal, c);
+        }
+
+        if(c == ',' || c == '}')
+        {
+            key[nec_size(key) - 1] = 0;
+            if(sVal) sVal[nec_size(sVal) - 1] = 0;
+
+            printf("%d %s %s\n", type, key, sVal);
+            //printf("%d\n", atoi(sVal));
+
+            if(type == 1) json_set_object(&dir, key, oVal);
+            if(type == 2) json_set_string(&dir, key, sVal);
+            if(type == 3) { json_set_int(&dir, key, atoi(sVal)); nec_free(sVal); }
+            if(type == 4) { json_set_double(&dir, key, atof(sVal)); nec_free(sVal); }
+
+            key = 0;
+            sVal = 0;
+            type = 0;
+        }
+    }
+
     return dir;
 }
 
