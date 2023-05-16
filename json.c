@@ -132,50 +132,63 @@ char* json_write(const json* dir)
     return buff;
 }
 
-json json_read(const char* buff)
+char isEscaped(const char* buff, char esc)
+{
+    return buff && buff[nec_size(buff) - 1] == esc && buff[nec_size(buff) - 2] == '"' && buff[nec_size(buff) - 2] != '\\';
+}
+char isRowed(const char* buff, char esc, char next)
+{
+    return *buff == esc && *(buff + 1) == next || *(buff + 1) == 0;
+}
+
+json deep_read(const char** buff)
 {
     json dir = json_init();
-    char c, type = 0, *key = 0, *sVal = 0;
-    json oVal;
-    while(*buff++ != '}')
+    char type = 0, *key = 0, *str = 0;
+    json obj;
+    char in = 0;
+    while(*(*buff)++ != '}')
     {
-        c = *buff;
-        if(!key || key[nec_size(key) - 1] != ':')
+        if(!isEscaped(key, ':'))
         {
-            if(c == '"') continue;
-            nec_push(key, c);
+            if(**buff == '"') continue;
+            nec_push(key, **buff);
         }
         else
         {
             if(!type)
             {
-                if(c == '{') type = 1;
-                else if(c == '"') type = 2;
+                if(**buff == '{') obj = deep_read(buff), type = 1;
+                else if(**buff == '"') type = 2;
                 else type = 3;
             }
-            else if(type == 3 && c == '.') type = 4;
-            if(type != 1) nec_push(sVal, c);
+            else if(type == 3 && **buff == '.') type = 4;
+            if(type != 1) nec_push(str, **buff);
         }
 
-        if(c == ',' || c == '}')
+        if(isRowed(*buff, ',', '"') || isRowed(*buff, '}', ','))
         {
             key[nec_size(key) - 1] = 0;
-            if(sVal) sVal[nec_size(sVal) - 1] = 0;
+            if(str) str[nec_size(str) - 1] = 0;
 
-            printf("%d %s %s\n", type, key, sVal);
-            //printf("%d\n", atoi(sVal));
-
-            if(type == 1) json_set_object(&dir, key, oVal);
-            if(type == 2) json_set_string(&dir, key, sVal);
-            if(type == 3) { json_set_int(&dir, key, atoi(sVal)); nec_free(sVal); }
-            if(type == 4) { json_set_double(&dir, key, atof(sVal)); nec_free(sVal); }
+            if(type == 1) json_set_object(&dir, key, obj);
+            if(type == 2) json_set_string(&dir, key, str);
+            if(type == 3) json_set_int(&dir, key, atoi(str)), nec_free(str);
+            if(type == 4) json_set_double(&dir, key, atof(str)), nec_free(str);
 
             key = 0;
-            sVal = 0;
+            str = 0;
             type = 0;
         }
     }
+    return dir;
+}
 
+json json_read(const char* buff)
+{
+    char* src = json_truncate(buff);
+    json dir = deep_read(&buff);
+    nec_free(src);
     return dir;
 }
 
