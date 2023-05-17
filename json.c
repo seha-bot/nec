@@ -3,6 +3,7 @@
 #include "nic.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include <ctype.h>
 
 json json_init(void)
 {
@@ -17,7 +18,7 @@ char* json_truncate(const char* src)
     while(*src++)
     {
         c = *(src - 1);
-        if(safe && (c == ' ' || c == '\n' || c == '\r')) continue;
+        if(safe && isspace(c)) continue;
         if(c == '"' && (safe || *(src - 2) != '\\')) safe = !safe;
         nec_push(buff, c);
     }
@@ -115,7 +116,7 @@ void deep_write(char** buff, const json* dir, int dent)
         nec_printf(buff, "\"%s\": ", key);
         if(ival) nec_printf(buff, "%d", *ival);
         else if(dval) nec_printf(buff, "%f", *dval);
-        else if(sval) safe_quotes(buff, *sval);
+        else if(sval) nec_printf(buff, "\"%s\"", *sval);
         else if(oval) deep_write(buff, oval, dent + 1);
 
         if(i != nec_size(dir->keys.data) - 1) nec_printf(buff, ",");
@@ -132,44 +133,54 @@ char* json_write(const json* dir)
     return buff;
 }
 
-char isEscaped(const char* buff, char esc)
+char isRowed(const char* buff, char prev, char esc, const char* bad)
 {
-    return buff && buff[nec_size(buff) - 1] == esc && buff[nec_size(buff) - 2] == '"' && buff[nec_size(buff) - 2] != '\\';
+    int n = nec_size(buff);
+    if(n < 2) return 0;
+    if(n > 2 && bad && buff[n - 1] == bad[2] && buff[n - 2] == bad[1] && buff[n - 3] == bad[0]) return 0;
+    return buff[n - 1] == esc && buff[n - 2] == prev;
 }
-char isRowed(const char* buff, char esc, char next)
+
+char isEscaped(const char* buff, char type)
 {
-    return *buff == esc && *(buff + 1) == next || *(buff + 1) == 0;
+    return type == 2 && *(buff - 1) == '"' && *buff == '}' || type != 2 && *buff == '}';
 }
 
 json deep_read(const char** buff)
 {
-    json dir = json_init();
+    printf("%s\n", *buff);
+    json dir = json_init(), obj;
     char type = 0, *key = 0, *str = 0;
-    json obj;
-    char in = 0;
+    (*buff)++;
     while(*(*buff)++ != '}')
     {
-        if(!isEscaped(key, ':'))
+        if(!isRowed(key, '"', ':', "\\\":"))
         {
-            if(**buff == '"') continue;
             nec_push(key, **buff);
-        }
-        else
-        {
-            if(!type)
-            {
-                if(**buff == '{') obj = deep_read(buff), type = 1;
-                else if(**buff == '"') type = 2;
-                else type = 3;
-            }
-            else if(type == 3 && **buff == '.') type = 4;
-            if(type != 1) nec_push(str, **buff);
+            printf("KEY DEBUG %s %d\n", key, isspace(**buff));
+            continue;
         }
 
-        if(isRowed(*buff, ',', '"') || isRowed(*buff, '}', ','))
+        if(!type)
         {
+            if(**buff == '{') obj = deep_read(buff), type = 1;
+            else if(**buff == '"') { type = 2; continue; }
+            else type = 3;
+        }
+        else if(type == 3 && **buff == '.') type = 4;
+        if(type != 1) nec_push(str, **buff);
+
+        printf("DEBUG %s %s\n", key, str);
+
+        if(/*isRowed(str, '"', ',', "\\\",") ||*/ isRowed(str, ',', '"', 0) || isEscaped(*buff, type) || type != 2 && **buff == '"')
+        {
+            nec_pop(key);
             key[nec_size(key) - 1] = 0;
+            if(type == 2) nec_pop(str);
+            if(type == 2 && !isEscaped(*buff, type)) nec_pop(str);
             if(str) str[nec_size(str) - 1] = 0;
+
+            printf("END %s %s\n", key, str);
 
             if(type == 1) json_set_object(&dir, key, obj);
             if(type == 2) json_set_string(&dir, key, str);
@@ -186,9 +197,12 @@ json deep_read(const char** buff)
 
 json json_read(const char* buff)
 {
-    char* src = json_truncate(buff);
-    json dir = deep_read(&buff);
-    nec_free(src);
+    const char* src = json_truncate(buff);
+    printf("SRC %s\n", src);
+    // return (json){};
+    json dir = deep_read(&src);
+    printf("good?\n");
+    //nec_free(src);
     return dir;
 }
 
