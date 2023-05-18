@@ -20,15 +20,15 @@ typedef struct nicp nicp;
 
 typedef struct
 {
-    void* data;
-    nicp *memo;
     size_t root;
+    nicp* memo;
+    void* data;
 } nic;
 
-size_t nic_hash(char*);
-size_t nic_find_hash(nicp*, size_t, size_t);
-size_t nic_insert_hash(nicp**, size_t, size_t);
-void nic_debug(nicp*, size_t, char*);
+size_t nic_hash(const char*);
+size_t nic_find_hash(const nicp*, const size_t, const size_t);
+size_t nic_insert_hash(nicp**, const size_t, size_t);
+void nic_debug(const nicp*, const size_t, char*);
 
 // Find definitions
 #define nic_find(__nic_a, __nic_k) nic_find_hash(__nic_a.memo, __nic_a.root, __nic_k)
