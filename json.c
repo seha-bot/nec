@@ -1,6 +1,4 @@
 #include "json.h"
-#include "nec.h"
-#include "nic.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -143,7 +141,6 @@ char noMatch(const char* buff, const char* no, const char* edgecase)
 
 json deep_read(const char** buff)
 {
-    printf("%s\n", *buff);
     json dir = json_init(), obj;
     char type = 0, *key = 0, *str = 0;
     (*buff)++;
